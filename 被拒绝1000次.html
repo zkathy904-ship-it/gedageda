@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>1000个被拒绝 & 1000个小成就</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <style>
+        html, body {
+            height: 100%;
+            background: #111215;
+        }
+        body {
+            font-family: 'Inter', 'SF Pro Display', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            letter-spacing: 0.02em;
+        }
+        ::selection {
+            background: #0ff1; /* cyan selection */
+        }
+        .fade-in {
+            animation: fadeIn 0.25s cubic-bezier(.4,0,.2,1);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px);}
+            to { opacity: 1; transform: translateY(0);}
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-[#111215] text-gray-100 flex flex-col items-center justify-center px-4 py-8">
+    <main class="w-full max-w-xl">
+        <h1 class="text-2xl md:text-3xl font-semibold tracking-wider text-center mb-8 select-none">1000个被拒绝 & 1000个小成就</h1>
+        <div class="flex gap-6 justify-center mb-8">
+            <!-- Rejection Counter -->
+            <button id="rejectionBtn" class="flex flex-col items-center px-6 py-4 rounded-xl bg-[#18191c] hover:bg-[#232428] transition group shadow-lg focus:outline-none">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="x-circle" class="text-orange-400 group-hover:scale-110 transition"></i>
+                    <span class="text-lg font-bold text-orange-300 tracking-widest" id="rejectionCount">0</span>
+                </div>
+                <span class="mt-1 text-xs text-orange-200 tracking-wide">被拒绝的瞬间</span>
+            </button>
+            <!-- Achievement Counter -->
+            <button id="achievementBtn" class="flex flex-col items-center px-6 py-4 rounded-xl bg-[#18191c] hover:bg-[#232428] transition group shadow-lg focus:outline-none">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="sparkles" class="text-cyan-300 group-hover:scale-110 transition"></i>
+                    <span class="text-lg font-bold text-cyan-200 tracking-widest" id="achievementCount">0</span>
+                </div>
+                <span class="mt-1 text-xs text-cyan-100 tracking-wide">有成就感的小事</span>
+            </button>
+        </div>
+        <!-- Lists -->
+        <section id="lists" class="space-y-6">
+            <!-- Rejection List -->
+            <div id="rejectionListWrap" class="hidden fade-in">
+                <div class="flex items-center gap-2 mb-2">
+                    <i data-lucide="x-circle" class="text-orange-400"></i>
+                    <span class="text-orange-200 text-sm tracking-wide">被拒绝的瞬间</span>
+                </div>
+                <ul id="rejectionList" class="space-y-2"></ul>
+                <form id="rejectionForm" class="flex gap-2 mt-3">
+                    <input id="rejectionInput" type="text" maxlength="100" autocomplete="off" placeholder="记录一个被拒绝的瞬间…" class="flex-1 bg-[#232428] text-orange-100 placeholder-orange-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-orange-400/30 transition" />
+                    <button type="submit" class="px-3 py-2 rounded-lg bg-orange-400 text-black font-semibold hover:bg-orange-500 transition">添加</button>
+                </form>
+            </div>
+            <!-- Achievement List -->
+            <div id="achievementListWrap" class="hidden fade-in">
+                <div class="flex items-center gap-2 mb-2">
+                    <i data-lucide="sparkles" class="text-cyan-300"></i>
+                    <span class="text-cyan-200 text-sm tracking-wide">有成就感的小事</span>
+                </div>
+                <ul id="achievementList" class="space-y-2"></ul>
+                <form id="achievementForm" class="flex gap-2 mt-3">
+                    <input id="achievementInput" type="text" maxlength="100" autocomplete="off" placeholder="记录一个小成就…" class="flex-1 bg-[#232428] text-cyan-100 placeholder-cyan-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-cyan-400/30 transition" />
+                    <button type="submit" class="px-3 py-2 rounded-lg bg-cyan-400 text-black font-semibold hover:bg-cyan-500 transition">添加</button>
+                </form>
+            </div>
+        </section>
+    </main>
+    <script>
+        // LocalStorage keys
+        const REJECTION_KEY = 'rejections';
+        const ACHIEVEMENT_KEY = 'achievements';
+
+        // Elements
+        const rejectionBtn = document.getElementById('rejectionBtn');
+        const achievementBtn = document.getElementById('achievementBtn');
+        const rejectionListWrap = document.getElementById('rejectionListWrap');
+        const achievementListWrap = document.getElementById('achievementListWrap');
+        const rejectionList = document.getElementById('rejectionList');
+        const achievementList = document.getElementById('achievementList');
+        const rejectionCount = document.getElementById('rejectionCount');
+        const achievementCount = document.getElementById('achievementCount');
+        const rejectionForm = document.getElementById('rejectionForm');
+        const achievementForm = document.getElementById('achievementForm');
+        const rejectionInput = document.getElementById('rejectionInput');
+        const achievementInput = document.getElementById('achievementInput');
+
+        // State
+        let rejections = [];
+        let achievements = [];
+
+        // Load from localStorage
+        function loadData() {
+            rejections = JSON.parse(localStorage.getItem(REJECTION_KEY) || '[]');
+            achievements = JSON.parse(localStorage.getItem(ACHIEVEMENT_KEY) || '[]');
+        }
+
+        // Save to localStorage
+        function saveData() {
+            localStorage.setItem(REJECTION_KEY, JSON.stringify(rejections));
+            localStorage.setItem(ACHIEVEMENT_KEY, JSON.stringify(achievements));
+        }
+
+        // Render lists and counters
+        function render() {
+            rejectionCount.textContent = rejections.length;
+            achievementCount.textContent = achievements.length;
+
+            rejectionList.innerHTML = '';
+            rejections.slice().reverse().forEach((item, idx) => {
+                const li = document.createElement('li');
+                li.className = 'flex items-center gap-2 bg-[#1a1b1e] rounded-lg px-3 py-2 text-orange-100 text-sm';
+                li.innerHTML = `<span class="flex-1">${item}</span>
+                    <button class="delete-rejection" data-idx="${rejections.length-1-idx}" title="删除">
+                        <i data-lucide="trash-2" class="w-4 h-4 text-orange-300 hover:text-orange-400"></i>
+                    </button>`;
+                rejectionList.appendChild(li);
+            });
+
+            achievementList.innerHTML = '';
+            achievements.slice().reverse().forEach((item, idx) => {
+                const li = document.createElement('li');
+                li.className = 'flex items-center gap-2 bg-[#162024] rounded-lg px-3 py-2 text-cyan-100 text-sm';
+                li.innerHTML = `<span class="flex-1">${item}</span>
+                    <button class="delete-achievement" data-idx="${achievements.length-1-idx}" title="删除">
+                        <i data-lucide="trash-2" class="w-4 h-4 text-cyan-300 hover:text-cyan-400"></i>
+                    </button>`;
+                achievementList.appendChild(li);
+            });
+
+            lucide.createIcons();
+        }
+
+        // Toggle list visibility
+        function showList(type) {
+            if (type === 'rejection') {
+                rejectionListWrap.classList.remove('hidden');
+                achievementListWrap.classList.add('hidden');
+                rejectionInput.focus();
+            } else {
+                achievementListWrap.classList.remove('hidden');
+                rejectionListWrap.classList.add('hidden');
+                achievementInput.focus();
+            }
+        }
+
+        // Add item
+        function addItem(type, value) {
+            if (!value.trim()) return;
+            if (type === 'rejection') {
+                rejections.push(value.trim());
+            } else {
+                achievements.push(value.trim());
+            }
+            saveData();
+            render();
+        }
+
+        // Delete item
+        function deleteItem(type, idx) {
+            if (type === 'rejection') {
+                rejections.splice(idx, 1);
+            } else {
+                achievements.splice(idx, 1);
+            }
+            saveData();
+            render();
+        }
+
+        // Event listeners
+        rejectionBtn.addEventListener('click', () => showList('rejection'));
+        achievementBtn.addEventListener('click', () => showList('achievement'));
+
+        rejectionForm.addEventListener('submit', e => {
+            e.preventDefault();
+            addItem('rejection', rejectionInput.value);
+            rejectionInput.value = '';
+        });
+        achievementForm.addEventListener('submit', e => {
+            e.preventDefault();
+            addItem('achievement', achievementInput.value);
+            achievementInput.value = '';
+        });
+
+        rejectionList.addEventListener('click', e => {
+            if (e.target.closest('.delete-rejection')) {
+                const idx = +e.target.closest('.delete-rejection').dataset.idx;
+                deleteItem('rejection', idx);
+            }
+        });
+        achievementList.addEventListener('click', e => {
+            if (e.target.closest('.delete-achievement')) {
+                const idx = +e.target.closest('.delete-achievement').dataset.idx;
+                deleteItem('achievement', idx);
+            }
+        });
+
+        // Init
+        loadData();
+        render();
+
+        // Show rejection list by default if any, else achievement
+        if (rejections.length) {
+            showList('rejection');
+        } else {
+            showList('achievement');
+        }
+    </script>
+    <script>
+        // Lucide icons init
+        lucide.createIcons();
+    </script>
+</body>
+</html>
